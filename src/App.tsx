@@ -819,47 +819,15 @@ const [splashDone, setSplashDone] = useState(false);
                 </button>
               </div>
             )}
-            {/* Title Bar Buttons / Minimize / Maximize / Close */}
-            <div className="flex items-center gap-1.5 " style={{WebkitAppRegion:'no-drag'} as any}>
-              {/* Windows background run indicator button */}
-              <button
-                type="button"
-                onClick={() => { document.body.style.transition='transform 0.2s ease, opacity 0.2s ease'; document.body.style.transform='scale(0.95)'; document.body.style.opacity='0'; setTimeout(()=>{ const {ipcRenderer} = window.require('electron'); ipcRenderer.send('minimize-window'); document.body.style.transform=''; document.body.style.opacity=''; }, 200); }}
-                className="hidden md:flex items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/30 rounded-lg px-2.5 py-1 select-none mr-2 transition-all cursor-pointer text-left active:scale-95"
-                title="Cho phép chạy ngầm Windows (Thu nhỏ)"
-              >
-                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
-                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Chạy ngầm Windows</span>
-              </button>
-              
-              {/* Settings Gear Button */}
+            {/* Settings Button */}
+            <div className="flex items-center gap-1.5" style={{WebkitAppRegion:'no-drag'} as any}>
               <button 
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-450 hover:bg-white/5 transition-all active:scale-95 cursor-pointer mr-1"
-                title="Cài đặt hệ thông (Settings)"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-450 hover:bg-white/5 transition-all active:scale-95 cursor-pointer"
+                title="Cài đặt hệ thống (Settings)"
               >
                 <SettingsIcon size={16} />
-              </button>
-
-              {/* − Minimize */}
-              <button 
-                type="button"
-                onClick={() => { document.body.style.transition='transform 0.2s ease, opacity 0.2s ease'; document.body.style.transform='scale(0.95)'; document.body.style.opacity='0'; setTimeout(()=>{ const {ipcRenderer} = window.require('electron'); ipcRenderer.send('minimize-window-taskbar'); document.body.style.transform=''; document.body.style.opacity=''; }, 200); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 cursor-pointer font-black"
-                title="Chạy ẩn (Minimize)"
-              >
-                <span className="text-lg font-black leading-none -mt-0.5">−</span>
-              </button>
-              
-              {/* ✕ Close */}
-              <button 
-                type="button"
-                onClick={() => { const {ipcRenderer} = window.require('electron'); ipcRenderer.send('close-window'); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-rose-600/95 transition-all active:scale-95 cursor-pointer"
-                title="Đóng ứng dụng"
-              >
-                <span className="text-sm font-semibold">✕</span>
               </button>
             </div>
           </div>
