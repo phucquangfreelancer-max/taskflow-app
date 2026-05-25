@@ -444,6 +444,44 @@ export default function AIPlanTab({ user, onJumpToChecklist }: { user: any, onJu
 
   const weekDates = getWeekDates();
 
+  const getTaskCompletionMinutes = (task: any) => {
+    return task.isShortTerm
+      ? Number(task.allocatedDurationForDay || task.duration) || 0
+      : Number(task.duration) || 0;
+  };
+
+  const getAirTimeSortValue = (task: any) => {
+    const time = task.airVideoSchedule?.time || '23:59';
+    const [hours = 23, minutes = 59] = String(time).split(':').map(Number);
+    return (Number.isFinite(hours) ? hours : 23) * 60 + (Number.isFinite(minutes) ? minutes : 59);
+  };
+
+  const hasAirScheduleOnDay = (task: any, day: string) => {
+    return !!(
+      task.airVideoSchedule &&
+      Array.isArray(task.airVideoSchedule.days) &&
+      task.airVideoSchedule.days.includes(day)
+    );
+  };
+
+  const shouldRenderMainTaskOnDay = (task: any, day: string) => {
+    if (task.isShortTerm) return true;
+
+    const hasCycle = task.cycle && Array.isArray(task.cycle) && task.cycle.length > 0;
+    if (hasCycle) return task.cycle.includes(day);
+
+    const deadlineStr = (task.deadline || "").toLowerCase();
+    const hasDeadlineDayMatch = deadlineStr.includes(day.toLowerCase());
+    if (hasDeadlineDayMatch) return true;
+
+    const hasAnyFocusAssigned = DAYS_OF_WEEK.some(d => deadlineStr.includes(d.toLowerCase()));
+    if (hasAnyFocusAssigned) return false;
+
+    const createdAt = parseSafeDate(task.createdAt);
+    const dayName = DAY_MAP[getDay(createdAt)];
+    return dayName === day;
+  };
+
   // Automatically compute the schedule from tasks
   const getWeeklySchedule = (dates: Date[]) => {
     const weeklyPlan: Record<string, any[]> = {};
@@ -514,30 +552,20 @@ export default function AIPlanTab({ user, onJumpToChecklist }: { user: any, onJu
       }
     });
 
-    // 3. Sort each day: urgent deadlines first, then no deadlines, sorted by duration
+    // 3. Sort each day: main tasks by completion time, Air schedules by air time.
     DAYS_OF_WEEK.forEach(day => {
       weeklyPlan[day].sort((a, b) => {
-        const hasA = !!(a.isShortTerm ? a.shortTermDeadline : a.deadline);
-        const hasB = !!(b.isShortTerm ? b.shortTermDeadline : b.deadline);
-        
-        if (hasA && !hasB) return -1;
-        if (!hasA && hasB) return 1;
-        
-        if (hasA && hasB) {
-          const getDeadlineSortKey = (t: any) => {
-            if (t.isShortTerm) {
-              return `${t.shortTermDeadline || '9999-12-31'} ${t.shortTermDeadlineTime || '23:59'}`;
-            }
-            // Normalize standard text deadlines
-            return `${t.deadline || 'ZZZ'} ${t.deadlineTime || '23:59'}`.toLowerCase();
-          };
-          return getDeadlineSortKey(a).localeCompare(getDeadlineSortKey(b));
+        const aIsAirOnly = hasAirScheduleOnDay(a, day) && !shouldRenderMainTaskOnDay(a, day);
+        const bIsAirOnly = hasAirScheduleOnDay(b, day) && !shouldRenderMainTaskOnDay(b, day);
+
+        if (aIsAirOnly && !bIsAirOnly) return 1;
+        if (!aIsAirOnly && bIsAirOnly) return -1;
+
+        if (aIsAirOnly && bIsAirOnly) {
+          return getAirTimeSortValue(a) - getAirTimeSortValue(b);
         }
-        
-        // Both have NO deadlines, sort by duration
-        const durA = a.isShortTerm ? (a.allocatedDurationForDay || 0) : (Number(a.duration) || 0);
-        const durB = b.isShortTerm ? (b.allocatedDurationForDay || 0) : (Number(b.duration) || 0);
-        return durA - durB;
+
+        return getTaskCompletionMinutes(a) - getTaskCompletionMinutes(b);
       });
     });
 
@@ -1250,6 +1278,13 @@ export default function AIPlanTab({ user, onJumpToChecklist }: { user: any, onJu
                 {DAYS_OF_WEEK.map((day) => {
                   const dayTasks = weeklySchedule[day] || [];
                   const isToday = day === todayDayName;
+                  const mainTasks = dayTasks
+                    .filter((task: any) => shouldRenderMainTaskOnDay(task, day))
+                    .sort((a: any, b: any) => getTaskCompletionMinutes(a) - getTaskCompletionMinutes(b));
+                  const airTasks = dayTasks
+                    .filter((task: any) => hasAirScheduleOnDay(task, day))
+                    .sort((a: any, b: any) => getAirTimeSortValue(a) - getAirTimeSortValue(b));
+                  const visibleTaskCount = mainTasks.length + airTasks.length;
                   
                   return (
                     <div 
@@ -1259,11 +1294,9 @@ export default function AIPlanTab({ user, onJumpToChecklist }: { user: any, onJu
                         isToday ? "bg-indigo-500/5 ring-1 ring-inset ring-indigo-500/10" : "bg-[#0e0e10]/20 opacity-30 hover:opacity-95"
                       )}
                     >
-                      {dayTasks.map((task: any, idx: number) => {
+                      {mainTasks.map((task: any, idx: number) => {
                         const styles = getTaskStyles(task);
-                        const hasLichAirOnDay = task.airVideoSchedule && 
-                          Array.isArray(task.airVideoSchedule.days) && 
-                          task.airVideoSchedule.days.includes(day);
+                        const hasLichAirOnDay = false;
 
                         const isShortTerm = !!task.isShortTerm;
                         let shouldRenderMainCard = false;
@@ -1368,7 +1401,28 @@ export default function AIPlanTab({ user, onJumpToChecklist }: { user: any, onJu
                           </React.Fragment>
                         );
                       })}
-                      {dayTasks.length === 0 && tasks.length > 0 && (
+                      {airTasks.map((task: any, idx: number) => (
+                        <motion.div
+                          key={`air-${task.id}-${idx}`}
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ delay: ((mainTasks.length + idx) * 0.05) + 0.02 }}
+                          className="p-2.5 rounded-xl border border-emerald-500/40 bg-[#061c12]/60 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)] hover:shadow-[0_0_18px_rgba(16,185,129,0.55)] flex flex-col gap-1 transition-all hover:scale-[1.02] relative overflow-hidden cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[8px] font-black uppercase text-emerald-400 tracking-widest flex items-center gap-1 animate-pulse">
+                              ● Lịch Air
+                            </span>
+                            <span className="text-[9px] font-black font-mono text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                              {task.airVideoSchedule.time}
+                            </span>
+                          </div>
+                          <p className="text-[10px] font-bold text-emerald-100/90 leading-snug line-clamp-2">
+                            {task.name}
+                          </p>
+                        </motion.div>
+                      ))}
+                      {visibleTaskCount === 0 && tasks.length > 0 && (
                         <div className="h-full flex items-center justify-center opacity-10">
                            <span className="text-[10px] text-slate-500 font-bold uppercase rotate-90 tracking-widest">Trống</span>
                         </div>
