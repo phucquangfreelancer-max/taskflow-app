@@ -7,7 +7,7 @@ import {
   LayoutDashboard, 
   Clock, 
   TrendingUp,
-  Settings as SettingsIcon,
+
   LogOut,
   User,
   Heart,
@@ -15,7 +15,7 @@ import {
   Trophy,
   AlertTriangle,
   Volume2,
-  Sparkles,
+
   RefreshCw
 } from 'lucide-react';
 import { auth } from './firebase';
@@ -25,7 +25,7 @@ import TaskEntryTab from './components/TaskEntryTab';
 import AIPlanTab from './components/AIPlanTab';
 import ChecklistTab from './components/ChecklistTab';
 import HealthTab from './components/HealthTab';
-import AIAssistantTab from './components/AIAssistantTab';
+
 import FloatingAIChat from './components/FloatingAIChat';
 import LoginScreen from './components/LoginScreen';
 import { sendNotification, playThreeBeeps } from './lib/utils';
@@ -117,43 +117,10 @@ const [splashDone, setSplashDone] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Settings & Reset app states
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showConfigReset, setShowConfigReset] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('taskflow_gemini_api_key') || '');
-  const [runOnStartup, setRunOnStartup] = useState(() => localStorage.getItem('taskflow_run_on_startup') === 'true');
-  const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
 
-  const handleToggleRunOnStartup = (checked: boolean) => {
-    setRunOnStartup(checked);
-    localStorage.setItem('taskflow_run_on_startup', checked ? 'true' : 'false');
-    try {
-      const { ipcRenderer } = window.require('electron');
-      ipcRenderer.send('toggle-autostart', checked);
-    } catch (e) {
-      console.log("Skipped electron autostart (outside Electron environment)");
-    }
-  };
 
-  const handleSaveApiKey = (val: string) => {
-    setApiKey(val);
-    localStorage.setItem('taskflow_gemini_api_key', val);
-    window.dispatchEvent(new CustomEvent('taskflow-apikey-updated', { detail: val }));
-  };
 
-  const handleResetApp = () => {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('taskflow_') || key.startsWith('health_'))) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    window.dispatchEvent(new CustomEvent('local-db-tasks-updated'));
-    setIsSettingsOpen(false);
-    setShowConfigReset(false);
-    window.location.reload();
-  };
+
 
   // Synchronized Health reminding background states
   const [healthWaterCount, setHealthWaterCount] = useState<number>(0);
@@ -805,7 +772,7 @@ const [splashDone, setSplashDone] = useState(false);
               </div>
             </div>
             {user && (
-              <div className="absolute right-80 top-1/2 -translate-y-1/2 flex flex-col items-end gap-1.5" style={{WebkitAppRegion:'no-drag'} as any}>
+              <div className="flex flex-col items-end gap-1.5" style={{WebkitAppRegion:'no-drag'} as any}>
                 <span className="text-[11px] font-semibold text-slate-300 leading-none truncate max-w-[200px]">
                   {user.email}
                 </span>
@@ -819,17 +786,6 @@ const [splashDone, setSplashDone] = useState(false);
                 </button>
               </div>
             )}
-            {/* Settings Button */}
-            <div className="flex items-center gap-1.5" style={{WebkitAppRegion:'no-drag'} as any}>
-              <button 
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-450 hover:bg-white/5 transition-all active:scale-95 cursor-pointer"
-                title="Cài đặt hệ thống (Settings)"
-              >
-                <SettingsIcon size={16} />
-              </button>
-            </div>
           </div>
         </header>
 
@@ -881,17 +837,7 @@ const [splashDone, setSplashDone] = useState(false);
                   <HealthTab user={user} />
                 </motion.div>
               )}
-              {activeTab === 'ai' && (
-                <motion.div
-                  key="ai"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <AIAssistantTab user={user} />
-                </motion.div>
-              )}
+
             </AnimatePresence>
 
             <FloatingAIChat user={user} />
@@ -951,14 +897,7 @@ const [splashDone, setSplashDone] = useState(false);
           label={(healthMode === 'nightOwl' && isNightOwlActive) ? "Cú đêm" : "Sức khỏe"}
           isNightOwlPulse={healthMode === 'nightOwl' && isNightOwlActive}
         />
-        <TabButton 
-          active={activeTab === 'ai'} 
-          onClick={() => {
-            setActiveTab('ai');
-          }}
-          icon={<Sparkles size={18} />}
-          label="Trợ lý AI"
-        />
+
       </nav>
       </div>
 
@@ -1077,9 +1016,6 @@ const [splashDone, setSplashDone] = useState(false);
 
               {/* SPECIAL HEALTH RANDOM QUOTE CONTAINER */}
               <div className="bg-[#121b36] border border-emerald-500/20 p-5 rounded-2xl text-left relative overflow-hidden">
-                <div className="absolute top-2 right-2 text-emerald-400/20">
-                  <Sparkles size={20} />
-                </div>
                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block mb-1">Lời Khuyên Sức Khỏe Truyền Cảm Hứng</span>
                 <p className="text-xs text-slate-200 font-medium italic leading-relaxed">
                   "{healthRandomQuote || WATER_QUOTES[0]}"
@@ -1229,149 +1165,7 @@ const [splashDone, setSplashDone] = useState(false);
         )}
       </AnimatePresence>
 
-      {/* 2. CHUYÊN MỤC CÀI ĐẶT HỆ THỐNG / SETTINGS SYSTEM MODAL */}
-      <AnimatePresence>
-        {isSettingsOpen && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[120] flex items-center justify-center p-4 select-none">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-[#111113] border border-white/10 rounded-[2rem] p-7 max-w-md w-full text-left space-y-6 shadow-2xl relative overflow-hidden"
-            >
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-2 text-white">
-                  <SettingsIcon size={20} className="text-indigo-400" />
-                  <h3 className="text-sm font-bold tracking-tight">Cài đặt hệ thống</h3>
-                </div>
-                <button 
-                  onClick={() => setIsSettingsOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
 
-              {/* Setting details content */}
-              <div className="space-y-5 py-2">
-
-                {/* 2. Chạy cùng Windows */}
-                <div className="bg-[#18181b]/50 border border-white/5 p-4 rounded-2xl flex items-start gap-3">
-                  <input 
-                    type="checkbox"
-                    id="checkbox-startup"
-                    checked={runOnStartup}
-                    onChange={(e) => handleToggleRunOnStartup(e.target.checked)}
-                    style={{ WebkitAppRegion: 'no-drag' } as any}
-                    className="mt-1 w-4 h-4 text-indigo-600 bg-slate-950 border-white/10 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
-                  />
-                  <div className="space-y-1">
-                    <label htmlFor="checkbox-startup" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
-                      Chạy cùng Windows
-                    </label>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">
-                      Tự động khởi động phần mềm TaskFlow khi bạn bật máy tính để không bao giờ bỏ lỡ công việc hằng ngày.
-                    </p>
-                  </div>
-                </div>
-
-                {/* API Key */}
-                <div className="bg-[#18181b]/50 border border-white/5 p-4 rounded-2xl space-y-3">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-slate-200">🔑 Gemini API Key</h4>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">
-                      Nhập API Key từ <span className="text-indigo-400">aistudio.google.com</span> để kết nối trợ lý AI.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      style={{ WebkitAppRegion: "no-drag" } as any}
-                      className="flex-1 bg-slate-950 border border-white/10 focus:border-indigo-500/50 text-white placeholder-slate-600 px-3 py-2 rounded-xl text-xs outline-none transition-all font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleSaveApiKey(apiKey)}
-                      style={{ WebkitAppRegion: "no-drag" } as any}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all cursor-pointer"
-                    >
-                      Lưu
-                    </button>
-                  </div>
-                  {apiKey && (
-                    <p className="text-[10px] text-emerald-400">✅ Đã có API Key</p>
-                  )}
-                </div>
-
-                {/* 3. Reset App */}
-                <div className="pt-2 border-t border-white/5 space-y-3">
-                  <h4 className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Cấu hình dữ liệu</h4>
-                  <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Xóa hoàn toàn dữ liệu của ứng dụng bao gồm các công việc, các chỉ số đo lường sức khỏe, và đưa tất cả cài đặt trở về mặc định ban đầu.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowConfigReset(true);
-                    }}
-                    style={{ WebkitAppRegion: 'no-drag' } as any}
-                    className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-600 text-rose-400 hover:text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer text-center"
-                  >
-                    Reset ứng dụng
-                  </button>
-                </div>
-
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 3. BẢNG XÁC NHẬN RESET APP TRỰC QUAN / RESET CONFIRMATION DIALOG */}
-      <AnimatePresence>
-        {showConfigReset && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#111113] border border-rose-500/30 rounded-[2.5rem] p-8 max-w-sm w-full text-center space-y-6 shadow-[0_0_50px_rgba(239,68,68,0.15)] relative overflow-hidden text-slate-300 select-none"
-            >
-              {/* Alert icon wrapper */}
-              <div className="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-full flex items-center justify-center">
-                <AlertTriangle size={32} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">Đặt lại ứng dụng?</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Chú ý: Hành động này sẽ xoá toàn bộ danh sách công việc, lịch sử chăm sóc sức khoa và các cài đặt khoá bảo mật vĩnh viễn khỏi thiết bị này. Bạn không thể hoàn tác hành động này.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={handleResetApp}
-                  className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-6 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 active:scale-95 transition-all cursor-pointer"
-                >
-                  Xác nhận đặt lại dữ liệu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfigReset(false)}
-                  className="w-full bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-3 px-6 rounded-2xl text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer border border-white/5"
-                >
-                  Huỷ bỏ
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
