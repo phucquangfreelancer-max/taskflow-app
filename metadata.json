@@ -1,0 +1,6 @@
+{
+  "name": "Smart Task Planner AI",
+  "description": "Ứng dụng quản lý công việc thông minh với tính năng tự động chia lịch bằng AI, theo dõi tiến độ và bộ đếm giờ tập trung.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

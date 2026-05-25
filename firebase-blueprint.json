@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "Represents a user task with scheduling details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "deadline": { "type": "string" },
+        "cycle": { "type": "array", "items": { "type": "string" }, "description": "Days of week like ['Thứ 2', 'Thứ 3']" },
+        "airVideoSchedule": { 
+          "type": "object", 
+          "properties": {
+            "days": { "type": "array", "items": { "type": "string" } },
+            "time": { "type": "string" }
+          }
+        },
+        "duration": { "type": "number", "description": "Total minutes" },
+        "completedDates": { "type": "array", "items": { "type": "string" }, "description": "List of YYYY-MM-DD strings" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "hoursToComplete", "createdAt"]
+    },
+    "DailyLog": {
+      "title": "DailyLog",
+      "description": "Daily completion stats for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "description": "YYYY-MM-DD" },
+        "totalTasks": { "type": "number" },
+        "completedTasks": { "type": "number" }
+      },
+      "required": ["userId", "date", "totalTasks", "completedTasks"]
+    }
+  },
+  "firestore": {
+    "tasks": {
+      "schema": "Task",
+      "description": "User tasks collection."
+    },
+    "dailyLogs": {
+      "schema": "DailyLog",
+      "description": "User monthly/daily logs."
+    }
+  }
+}
